@@ -32,8 +32,9 @@ def cfg_net(B, H, W, C, net, param, weights_walker, stack, output_index, scope, 
     net = tf.placeholder(tf.float32, [None, width, height, channels], name=scope)
     return net
 
-
+i = 0
 def cfg_convolutional(B, H, W, C, net, param, weights_walker, stack, output_index, scope, training, const_inits, verbose):
+    global i
     batch_normalize = 'batch_normalize' in param
     size = int(param['size'])
     filters = int(param['filters'])
@@ -50,8 +51,27 @@ def cfg_convolutional(B, H, W, C, net, param, weights_walker, stack, output_inde
                                   filters=filters,
                                   weight_size=weight_size,
                                   batch_normalize=batch_normalize)
-    weights = weights.reshape(filters, C, size, size).transpose([2, 3, 1, 0])
-
+    i+=1
+    with open('weight_data/biases_{0}.txt'.format(str(i)), 'w') as out_file:
+        for x in biases.tolist():
+            out_file.write(str(x)+'\n')
+    if batch_normalize:
+        with open('weight_data/scales_{0}.txt'.format(str(i)), 'w') as out_file:
+            for x in scales.tolist():
+                out_file.write(str(x)+'\n')
+        with open('weight_data/rolling_mean_{0}.txt'.format(str(i)), 'w') as out_file:
+            for x in rolling_mean.tolist():
+                out_file.write(str(x)+'\n')
+        with open('weight_data/rolling_variance_{0}.txt'.format(str(i)), 'w') as out_file:
+            for x in rolling_variance.tolist():
+                out_file.write(str(x)+'\n')                    
+    with open('weight_data/b_{0}_{1}__{2}_{3}_{4}_{5}.txt'.format(param['name'],str(i),str(size),str(filters),str(stride),str(weight_size)), 'w') as out_file:
+        for x in weights.tolist():
+            out_file.write(str(x)+'\n')
+    weightsS = weights.reshape(filters, C, size, size).transpose([2, 3, 1, 0])   
+    with open('weight_data/{0}_{1}__{2}_{3}_{4}.txt'.format(param['name'],str(i),str(size),str(filters),str(stride) ), 'w') as out_file:
+        for x in weightsS.flatten().tolist():
+            out_file.write(str(x)+'\n')
     conv_args = {
         "filters": filters,
         "kernel_size": size,
@@ -62,7 +82,7 @@ def cfg_convolutional(B, H, W, C, net, param, weights_walker, stack, output_inde
 
     if const_inits:
         conv_args.update({
-            "kernel_initializer": tf.initializers.constant(weights, verify_shape=True),
+            "kernel_initializer": tf.initializers.constant(weightsS, verify_shape=True),
             "bias_initializer": tf.initializers.constant(biases, verify_shape=True)
         })
 
