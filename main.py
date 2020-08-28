@@ -21,7 +21,8 @@ def parse_net(num_layers, cfg, weights, training=False, const_inits=True, verbos
     weights_walker = WeightsReader(weights)
     output_index = []
     num_layers = int(num_layers)
-
+    print('len')
+    print(len(weights_walker.transpose.flat))
     for ith, layer in enumerate(cfg_walker):
         if ith > num_layers and num_layers > 0:
             break
@@ -66,35 +67,36 @@ def main(args):
     # Save .pb, .meta and final .ckpt by restoring weights
     # from previous .ckpt into the new (compact) graph.
     # ----------------------------------------------------------
-    tf.reset_default_graph()
-    parse_net(args.layers, args.cfg, args.weights, args.training, const_inits=False, verbose=False)
-    graph = tf.get_default_graph()
+    # tf.reset_default_graph()
+    # parse_net(args.layers, args.cfg, args.weights, args.training, const_inits=False, verbose=False)
+    # graph = tf.get_default_graph()
 
-    with tf.gfile.GFile(pb_path, 'wb') as f:
-        f.write(graph.as_graph_def(add_shapes=True).SerializeToString())
-    print("Saved .pb to '{}'".format(pb_path))
+    # with tf.gfile.GFile(pb_path, 'wb') as f:
+    #     f.write(graph.as_graph_def(add_shapes=True).SerializeToString())
+    # print("Saved .pb to '{}'".format(pb_path))
 
-    with tf.Session(graph=graph) as sess:
-        # Load weights (variables) from earlier .ckpt before saving out
-        var_list = {}
-        reader = tf.train.NewCheckpointReader(ckpt_path)
-        for key in reader.get_variable_to_shape_map():
-            # Look for all variables in ckpt that are used by the graph
-            try:
-                tensor = graph.get_tensor_by_name(key + ":0")
-            except KeyError:
-                # This tensor doesn't exist in the graph (for example it's
-                # 'global_step' or a similar housekeeping element) so skip it.
-                continue
-            var_list[key] = tensor
-        saver = tf.train.Saver(var_list=var_list)
-        saver.restore(sess, ckpt_path)
+    # with tf.Session(graph=graph) as sess:
+    #     # Load weights (variables) from earlier .ckpt before saving out
+    #     var_list = {}
+    #     reader = tf.train.NewCheckpointReader(ckpt_path)
+    #     for key in reader.get_variable_to_shape_map():
+    #         # Look for all variables in ckpt that are used by the graph
+    #         try:
+    #             tensor = graph.get_tensor_by_name(key + ":0")
+    #         except KeyError:
+    #             # This tensor doesn't exist in the graph (for example it's
+    #             # 'global_step' or a similar housekeeping element) so skip it.
+    #             continue
+    #         var_list[key] = tensor
+    #     print(var_list)
+    #     saver = tf.train.Saver(var_list=var_list)
+    #     saver.restore(sess, ckpt_path)
 
-        saver.export_meta_graph(ckpt_path+'.meta', clear_devices=True, clear_extraneous_savers=True)
-        print("Saved .meta to '{}'".format(ckpt_path+'.meta'))
+    #     saver.export_meta_graph(ckpt_path+'.meta', clear_devices=True, clear_extraneous_savers=True)
+    #     print("Saved .meta to '{}'".format(ckpt_path+'.meta'))
 
-        saver.save(sess, ckpt_path, write_meta_graph=False)
-        print("Saved .ckpt to '{}'".format(ckpt_path))
+    #     saver.save(sess, ckpt_path, write_meta_graph=False)
+    #     print("Saved .ckpt to '{}'".format(ckpt_path))
 
 
 if __name__ == "__main__":
@@ -104,7 +106,7 @@ if __name__ == "__main__":
     parser.add_argument('--output', default='data/', help='Output folder')
     parser.add_argument('--prefix', default='network/', help='Import scope prefix')
     parser.add_argument('--layers', default=0, help='How many layers, 0 means all')
-    parser.add_argument('--gpu', '-g', default='', help='GPU')
+    parser.add_argument('--gpu', '-g', default='0', help='GPU')
     parser.add_argument('--training', dest='training', action='store_true', help='Save training mode graph')
     args = parser.parse_args()
 
